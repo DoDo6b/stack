@@ -8,6 +8,9 @@
 #include "../kassert/kassert.h"
 #include "../useful/Macro.h"
 #include "Policy.h"
+#if TOLERANCEPOLICY_LVL >= 2
+    #include "crc.h"
+#endif
 #include "errCodes.h"
 
 
@@ -22,6 +25,7 @@ T1( uint32_t frontCanary; )
     char* data;
     size_t capacity;
     size_t sizeOfElem;
+T2( uint32_t crc32Data;)
 T2( uint32_t crc32;)
 T1( uint32_t tailCanary; )
 }Stack;

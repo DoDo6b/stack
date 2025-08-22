@@ -24,5 +24,8 @@ int main ()
     stackPop (&stack);
     stackDump (&stack);
 
+    memset (stack.data, 0XF4CCF4CC, 4);
+    stackDump (&stack);
+
     stackFree (&stack);
 }

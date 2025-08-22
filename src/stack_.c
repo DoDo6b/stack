@@ -1,12 +1,32 @@
 #include "stack_.h"
 
 
+static size_t ceil (size_t a, size_t b)
+{
+    assertStrict (b != 0, "IDIOT division by zero");
+    
+    return (a + b - 1) / b;
+}
+
+T2
+(
+static void updateT2Hashes (Stack* dst)
+{
+    assertStrict (dst, "recived a NULL");
+    assertStrict (dst->data, "stack wasnt initialized");
+
+    dst->crc32Data  = crc32Calculate ((unsigned char*)dst->data, dst->capacity * dst->sizeOfElem);
+    dst->crc32      = crc32Calculate ((unsigned char*)dst, &dst->crc32 - &dst->frontCanary);
+}
+)
+
+
 void stackInit (Stack* dst, size_t numOfElem, size_t sizeOfElem)
 {
     assertStrict (dst, "NULL received");
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    dst->data = (char*) calloc (numOfElem T1 ( + (2 * sizeof (uintptr_t) + sizeOfElem - 1) / sizeOfElem ), sizeOfElem) T1 ( + sizeof (uintptr_t));
+    dst->data = (char*) calloc (numOfElem T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) ), sizeOfElem) T1 ( + sizeof (uintptr_t));
 
     if (dst->data)
     {
@@ -18,9 +38,10 @@ T1      (
         dst->frontCanary = FRONTCANARY;
         dst->tailCanary  = TAILCANARY;
 
-        *((uintptr_t*)dst->data - 1) = (uintptr_t)dst->data ^ HEXSPEAK;
+        *((uintptr_t*)dst->data - 1)                      = (uintptr_t) dst->data ^ HEXSPEAK;
         *(uintptr_t*)(dst->data + numOfElem * sizeOfElem) = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
         )
+T2(     updateT2Hashes (dst); )
     }
     else
     {
@@ -37,7 +58,7 @@ T1      (
 void stackFree (Stack* stack)
 {
     assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
-T2( stack->data -= sizeof (uintptr_t); )
+T1( stack->data -= sizeof (uintptr_t); )
 
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 
@@ -63,6 +84,8 @@ void stackPush (Stack* stack, void* src)
     {
         memcpy (stack->top, src, stack->sizeOfElem);
         stack->top += stack->sizeOfElem;
+
+T2(     updateT2Hashes (stack); )
     }
 }
 
@@ -77,6 +100,7 @@ void stackPop_ (Stack* stack, void* dst /* = NULL */)
         if (dst) memcpy (dst, stack->top, stack->sizeOfElem);
 
 S1(     memset (stack->top, 0XCC, stack->sizeOfElem); )
+T2(     updateT2Hashes (stack); )
     }
 }
 
@@ -175,6 +199,31 @@ T1  (
         );
         selfTestingCode |= TOPPTR_OUTOFBOUNDS;
     }
+
+T2  ( 
+    if (stack->crc32 != crc32Calculate ((const unsigned char*)stack, &stack->crc32 - &stack->frontCanary))
+    {
+        log_string
+        (
+            "%s:%d: %s: <b><red>verification error:<dft> crc32 hash of struct has changed</b>\n",
+            callerFile,
+            callerLine,
+            __func__
+        );
+        selfTestingCode |= CRCMAIN_HASCHANGED;
+    }
+    if (stack->crc32Data != crc32Calculate ((const unsigned char*)stack->data, stack->capacity * stack->sizeOfElem))
+    {
+        log_string
+        (
+            "%s:%d: %s: <b><red>verification error:<dft> crc32 hash of data has changed</b>\n",
+            callerFile,
+            callerLine,
+            __func__
+        );
+        selfTestingCode |= CRCDATA_HASHCHANGED;
+    }
+    )
 
 
     if (selfTestingCode != 0)

@@ -12,6 +12,7 @@
     #define S1(...)
 #endif
 
+
 #if TOLERANCEPOLICY_LVL >= 1
     #define T1(...) __VA_ARGS__
 #else
@@ -23,6 +24,5 @@
 #else
     #define T2(...)
 #endif
-
 
 #endif
