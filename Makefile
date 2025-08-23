@@ -9,7 +9,7 @@ CFLAGS = 	-Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-eq
 BUILD_DIR = build
 TARGET = execute.exe
 
-SRC_DIRS = . logger kassert src
+SRC_DIRS = . logger kassert stack/src stack
 SRCS = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 

@@ -26,7 +26,8 @@ void stackInit (Stack* dst, size_t numOfElem, size_t sizeOfElem)
     assertStrict (dst, "NULL received");
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    dst->data = (char*) calloc (numOfElem T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) ), sizeOfElem) T1 ( + sizeof (uintptr_t));
+    size_t service_info = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) );
+    dst->data = (char*) calloc (numOfElem + service_info, sizeOfElem) T1 ( + sizeof (uintptr_t));
 
     if (dst->data)
     {
@@ -42,7 +43,10 @@ T1      (
         *(uintptr_t*)(dst->data + numOfElem * sizeOfElem) = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
         )
 T2(     updateT2Hashes (dst); )
+
+        assertStrict (stackVerify(dst) == 0, "verification failed, cant continue");
     }
+
     else
     {
         IF_DBG
@@ -57,7 +61,7 @@ T2(     updateT2Hashes (dst); )
 
 void stackFree (Stack* stack)
 {
-    assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
+    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
 T1( stack->data -= sizeof (uintptr_t); )
 
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
@@ -69,16 +73,14 @@ S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 
 void stackTop (const Stack* stack, void* dst)
 {
-    assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
-    assertStrict (dst,                                "NULL received");
+    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
     
     memcpy (dst, stack->top - stack->sizeOfElem, stack->sizeOfElem);
 }
 
 void stackPush (Stack* stack, void* src)
 {
-    assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
-    assertStrict (src,                                "NULL received");
+    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
 
     if ((size_t)(stack->top - stack->data) < stack->capacity * stack->sizeOfElem)
     {
@@ -91,7 +93,7 @@ T2(     updateT2Hashes (stack); )
 
 void stackPop_ (Stack* stack, void* dst /* = NULL */)
 {
-    assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
+    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
 
     if (stack->top - stack->sizeOfElem >= stack->data)
     {
@@ -106,7 +108,7 @@ T2(     updateT2Hashes (stack); )
 
 size_t stackLen (const Stack* stack)
 {
-    assertStrict (stack && stack->data && stack->top, "NULL received or stack wasnt initialized");
+    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
     return (stack->top - stack->data) / stack->sizeOfElem;
 }
 
@@ -212,6 +214,23 @@ T2  (
         );
         selfTestingCode |= CRCMAIN_HASCHANGED;
     }
+    )
+
+T1  (
+    if ( *((uintptr_t*)stack->data - 1) != ((uintptr_t) stack->data ^ HEXSPEAK) || *(uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem) != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
+    {
+        log_string
+        (
+            "%s:%d: %s: <b><red>verification error:<dft> data signes was corrupted</b>\n",
+            callerFile,
+            callerLine,
+            __func__
+        );
+        selfTestingCode |= DATABLOCK_SIGNES_CORRUPTED;
+    }
+    )
+
+T2  (
     if (stack->crc32Data != crc32Calculate ((const unsigned char*)stack->data, stack->capacity * stack->sizeOfElem))
     {
         log_string

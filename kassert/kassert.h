@@ -7,7 +7,7 @@
 #include "../logger/logger.h"
 #include <stdbool.h>
 
-//#define CALLATEXIT
+#define CALLATEXIT
 
 
 void assertStrict_  (const char* callerFile, unsigned int callerLine, const char* callerFunc, const char* conditionStr, bool condition, const char* dbgMsg);

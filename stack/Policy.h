@@ -25,4 +25,10 @@
     #define T2(...)
 #endif
 
+#if TOLERANCEPOLICY_LVL >= 3
+    #define T3(...) __VA_ARGS__
+#else
+    #define T3(...)
+#endif
+
 #endif

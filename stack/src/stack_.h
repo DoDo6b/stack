@@ -4,19 +4,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "../logger/logger.h"
-#include "../kassert/kassert.h"
-#include "../useful/Macro.h"
-#include "Policy.h"
+#include "../../logger/logger.h"
+#include "../../kassert/kassert.h"
+#include "../../useful/Macro.h"
+
+#include "../Policy.h"
 #if TOLERANCEPOLICY_LVL >= 2
     #include "crc.h"
 #endif
+
 #include "errCodes.h"
 
 
-#define FRONTCANARY 0X8BADF00D
-#define TAILCANARY  0XDEFEC10D
-#define HEXSPEAK    0XBADA110CBADFEE11
+const uint32_t FRONTCANARY = 0X8BADF00D;
+const uint32_t TAILCANARY  = 0XDEFEC10D;
+const uintptr_t HEXSPEAK   = 0XBADA110CBADFEE11;
 
 typedef struct
 {
@@ -48,5 +50,6 @@ void    stackDump_ (const char* name, const Stack* stack, void (*print)(const vo
 
 uint64_t stackVerify_ (const char* callerFile, unsigned int callerLine, const Stack* stack);
 #define  stackVerify(stack) stackVerify_ (__FILE__, __LINE__, stack)
+
 
 #endif
