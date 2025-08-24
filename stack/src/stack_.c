@@ -115,7 +115,7 @@ size_t stackLen (const Stack* stack)
 
 void stackDump_ (const char* name, const Stack* stack, void (*print)(const void* obj))
 {
-    if(stackVerify (stack) != 0)
+    if (stackVerify (stack) != 0)
     {
         log_err ("internal error", "verification failed, cant continue");
         return;
