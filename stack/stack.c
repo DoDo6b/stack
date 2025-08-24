@@ -1,97 +1,82 @@
 #include "src/stack_.h"
 #include "stack.h"
 
-static StackHandler Handlers[HANDLERSCAP] = {0};
+static Stack* Pointers[HANDLERSCAP] = {NULL};
+static StackHandler FreeHandler = 0;
 
-static bool handlerFind (StackHandler handler)
+
+static StackHandler handlerAdd (Stack* ptr)
 {
-    assertStrict (handler != 0, "NULL received");
+    assertStrict (ptr != NULL, "NULL received");
+    assertStrict (Pointers[FreeHandler] == NULL, "internal error");
 
-    for (size_t i = 0; i < HANDLERSCAP; i++)
-    {
-        if (Handlers[i] == handler)
-        {
-            return true;
-        }
-    }
-    return false;
+    StackHandler handler = FreeHandler;
+    while (Pointers[++FreeHandler]);
+
+    Pointers[handler] = ptr;
+
+    return handler;
 }
 
-static void handlerAdd (StackHandler handler)
+static Stack* handlerFree (StackHandler handler)
 {
-    assertStrict (handler != 0, "NULL received");
+    assertStrict (handler < HANDLERSCAP, "invalid handler");
 
-    for (size_t i = 0; i < HANDLERSCAP; i++)
+    if (Pointers[handler])
     {
-        if (Handlers[i] == 0)
-        {
-            Handlers[i] = handler;
-            return;
-        }
+        Stack* ptr = Pointers[handler];
+        Pointers[handler] = NULL;
+        if (FreeHandler > handler) FreeHandler = handler;
+        return ptr;
     }
-}
-
-static bool handlerFree (StackHandler handler)
-{
-    assertStrict (handler != 0, "NULL received");
-
-    for (size_t i = 0; i < HANDLERSCAP; i++)
-    {
-        if (Handlers[i] == handler)
-        {
-            Handlers[i] = 0;
-            return true;
-        }
-    }
-    return false;
+    else return NULL;
 }
 
 StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem)
 {
     Stack* ptr = (Stack*)malloc(sizeof(Stack));
     stackInit (ptr, numOfElem, sizeOfElem);
-    handlerAdd ( (StackHandler)ptr );
-    return (StackHandler)ptr;
+    return handlerAdd (ptr);
 }
 
 void stackFreeH (StackHandler handle)
 {
-    assertStrict (handlerFree (handle), "handler doesnt exists");
-    stackFree ((Stack*)handle);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    stackFree ( handlerFree (handle) );
 }
 
 void stackTopH (StackHandler handle, void* dst)
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    stackTop ((Stack*)handle, dst);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    stackTop (Pointers[handle], dst);
 }
 
-void stackPushH (StackHandler handle, void* src)
+void stackPushH (StackHandler handle, const void* src)
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    stackPush ((Stack*)handle, src);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    stackPush (Pointers[handle], src);
 }
 
 void stackPopH_ (StackHandler handle, void* dst)
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    stackPop_ ((Stack*)handle, dst);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    stackPop_ (Pointers[handle], dst);
 }
 
 size_t stackLenH (StackHandler handle)
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    return stackLen ((Stack*)handle);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    return stackLen (Pointers[handle]);
 }
 
 void stackDumpH_ (const char* name, StackHandler handle, void (*print)(const void* obj))
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    stackDump_ (name, (Stack*)handle, print);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    stackDump_ (name, Pointers[handle], print);
 }
 
 uint64_t stackVerifyH_ (const char* callerFile, unsigned int callerLine, StackHandler handle)
 {
-    assertStrict (handlerFind (handle), "handler doesnt exists");
-    return stackVerify_ (callerFile, callerLine, (Stack*)handle);
+    assertStrict (Pointers[handle], "handler doesnt exists");
+    return stackVerify_ (callerFile, callerLine, Pointers[handle]);
 }

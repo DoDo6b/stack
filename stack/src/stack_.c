@@ -78,7 +78,7 @@ void stackTop (const Stack* stack, void* dst)
     memcpy (dst, stack->top - stack->sizeOfElem, stack->sizeOfElem);
 }
 
-void stackPush (Stack* stack, void* src)
+void stackPush (Stack* stack, const void* src)
 {
     assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
 

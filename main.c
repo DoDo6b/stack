@@ -20,7 +20,7 @@ static void normalWork ()
 
     stackDumpH (stack);
 
-    stackPopH (stack)
+    stackPopH (stack);
     stackDumpH (stack);
 
     stackFreeH (stack);
@@ -54,6 +54,7 @@ static void randHandler ()
 
     log_string ("<grn>TEST PASSED<dft>\n");
 }
+
 
 int main ()
 {

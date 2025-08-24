@@ -25,10 +25,10 @@ void stackFreeH (StackHandler handle);
 
 void stackTopH (StackHandler handle, void* dst);
 
-void stackPushH (StackHandler handle, void* src);
+void stackPushH (StackHandler handle, const void* src);
 
 void stackPopH_ (StackHandler handle, void* dst);
-#define stackPopH(handle) stackPopH_ (handle, NULL);
+#define stackPopH(handle) stackPopH_ (handle, NULL)
 
 size_t stackLenH (StackHandler handle);
 

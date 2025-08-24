@@ -38,7 +38,7 @@ void stackFree (Stack* stack);
 
 void stackTop (const Stack* stack, void* dst);
 
-void stackPush (Stack* stack, void* src);
+void stackPush (Stack* stack, const void* src);
 
 void stackPop_ (Stack* stack, void* dst);
 #define stackPop(stack) stackPop_ (stack, NULL);
