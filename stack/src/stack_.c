@@ -55,7 +55,7 @@ T2(     updateT2Hashes (dst); )
             IF_SAFE (exit (EXIT_FAILURE);)
         )
 
-        memset (dst, 0, sizeof (Stack));
+        memset (dst, 0xCC, sizeof (Stack));
     }
 }
 
@@ -67,7 +67,7 @@ T1( stack->data -= sizeof (uintptr_t); )
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 
     free (stack->data);
-    memset (stack, 0, sizeof (Stack));
+    memset (stack, 0xCC, sizeof (Stack));
 }
 
 
@@ -81,6 +81,7 @@ void stackTopD (const Stack* stack, void* dst)
 void stackPushD (Stack* stack, const void* src)
 {
     assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (src, "received a NULL");
 
     if ((size_t)(stack->top - stack->data) < stack->capacity * stack->sizeOfElem)
     {

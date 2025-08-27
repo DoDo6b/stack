@@ -22,6 +22,7 @@ void crc32Init ()
 uint32_t crc32Calculate (const uint8_t* src, size_t size)
 {
     assertStrict (src, "received a NULL");
+    assertStrict (size > 0, "received a size equal 0");
 
     if (byteTable[0] == 0) crc32Init ();
 
