@@ -25,5 +25,8 @@ bool assertSoft_    (const char* callerFile, unsigned int callerLine, const char
 
 #endif
 
+#define assertStrict_NDBG(condition, dbgMsg)    assertStrict_   (__FILE__, __LINE__, __func__, #condition, condition, dbgMsg)
+#define assertSoft_NDBG(condition, dbgMsg)      assertSoft_     (__FILE__, __LINE__, __func__, #condition, condition, dbgMsg)
+
 
 #endif

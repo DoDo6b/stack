@@ -3,7 +3,8 @@
 
 
 #define TOLERANCEPOLICY_LVL 9
-#define SECURITY_LVL 9
+#define SECURITY_LVL        9
+#define LOGGINGLVL          9
 
 
 #if SECURITY_LVL >= 1
@@ -30,5 +31,25 @@
 #else
     #define T3(...)
 #endif
+
+
+#if LOGGINGLVL >= 1
+    #define L1(...) __VA_ARGS__
+#else
+    #define L1(...)
+#endif
+
+#if LOGGINGLVL >= 2
+    #define L2(...) __VA_ARGS__
+#else
+    #define L2(...)
+#endif
+
+#if LOGGINGLVL >= 3
+    #define L3(...) __VA_ARGS__
+#else
+    #define L3(...)
+#endif
+
 
 #endif

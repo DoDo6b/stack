@@ -21,7 +21,7 @@ static void updateT2Hashes (Stack* dst)
 )
 
 
-void stackInit (Stack* dst, size_t numOfElem, size_t sizeOfElem)
+void stackInitD (Stack* dst, size_t numOfElem, size_t sizeOfElem)
 {
     assertStrict (dst, "NULL received");
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
@@ -44,7 +44,7 @@ T1      (
         )
 T2(     updateT2Hashes (dst); )
 
-        assertStrict (stackVerify(dst) == 0, "verification failed, cant continue");
+        assertStrict (stackVerifyD(dst) == 0, "verification failed, cant continue");
     }
 
     else
@@ -59,9 +59,9 @@ T2(     updateT2Hashes (dst); )
     }
 }
 
-void stackFree (Stack* stack)
+void stackFreeD (Stack* stack)
 {
-    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
 T1( stack->data -= sizeof (uintptr_t); )
 
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
@@ -71,16 +71,16 @@ S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 }
 
 
-void stackTop (const Stack* stack, void* dst)
+void stackTopD (const Stack* stack, void* dst)
 {
-    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
     
     memcpy (dst, stack->top - stack->sizeOfElem, stack->sizeOfElem);
 }
 
-void stackPush (Stack* stack, const void* src)
+void stackPushD (Stack* stack, const void* src)
 {
-    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
 
     if ((size_t)(stack->top - stack->data) < stack->capacity * stack->sizeOfElem)
     {
@@ -91,9 +91,9 @@ T2(     updateT2Hashes (stack); )
     }
 }
 
-void stackPop_ (Stack* stack, void* dst /* = NULL */)
+void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 {
-    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
 
     if (stack->top - stack->sizeOfElem >= stack->data)
     {
@@ -106,16 +106,16 @@ T2(     updateT2Hashes (stack); )
     }
 }
 
-size_t stackLen (const Stack* stack)
+size_t stackLenD (const Stack* stack)
 {
-    assertStrict (stackVerify(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
     return (stack->top - stack->data) / stack->sizeOfElem;
 }
 
 
-void stackDump_ (const char* name, const Stack* stack, void (*print)(const void* obj))
+void stackDumpD_ (const char* name, const Stack* stack, void (*print)(const void* obj))
 {
-    if (stackVerify (stack) != 0)
+    if (stackVerifyD (stack) != 0)
     {
         log_err ("internal error", "verification failed, cant continue");
         return;
@@ -142,7 +142,7 @@ void stackDump_ (const char* name, const Stack* stack, void (*print)(const void*
 }
 
 
-uint64_t stackVerify_ (const char* callerFile, unsigned int callerLine, const Stack* stack)
+uint64_t stackVerifyD_ (const char* callerFile, unsigned int callerLine, const Stack* stack)
 {
     uint64_t selfTestingCode = 0;
 
