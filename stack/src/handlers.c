@@ -42,42 +42,42 @@ StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem)
 
 void stackFreeH (StackHandler handle)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     stackFreeD ( handlerFree (handle) );
 }
 
 void stackTopH (StackHandler handle, void* dst)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     stackTopD (Pointers[handle], dst);
 }
 
 void stackPushH (StackHandler handle, const void* src)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     stackPushD (Pointers[handle], src);
 }
 
 void stackPopH_ (StackHandler handle, void* dst)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     stackPopD_ (Pointers[handle], dst);
 }
 
 size_t stackLenH (StackHandler handle)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     return stackLenD (Pointers[handle]);
 }
 
 void stackDumpH_ (const char* name, StackHandler handle, void (*print)(const void* obj))
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     stackDumpD_ (name, Pointers[handle], print);
 }
 
 uint64_t stackVerifyH_ (const char* callerFile, unsigned int callerLine, StackHandler handle)
 {
-    assertStrict (Pointers[handle], "invalid handler");
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
     return stackVerifyD_ (callerFile, callerLine, Pointers[handle]);
 }
