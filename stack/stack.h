@@ -4,9 +4,31 @@
 
 #include "Policy.h"
 #if TOLERANCEPOLICY_LVL < 3
+
     #include "src/stack_.h"
+
+    typedef Stack* StackHandler;
+
+    #define stackInit(numOfElem, sizeOfElem)        stackInitD   (NULL, numOfElem, sizeOfElem)
+    #define stackFree(stack)                        stackFreeD   (stack)
+    #define stackTop(stack, dst)                    stackTopD    (stack, dst)
+    #define stackPush(stack, src)                   stackPushD   (stack, src)
+    #define stackPop(stack, dst)                    stackPopD_   (stack, dst)
+    #define stackLen(stack)                         stackLenD    (stack)
+    #define stackDump(stack)                        stackDumpD   (stack)
+    #define stackVerify(stack)                      stackVerifyD (stack)
+
 #else
     #include "src/handlers.h"
+
+    #define stackInit(numOfElem, sizeOfElem)   stackInitH   (numOfElem, sizeOfElem)
+    #define stackFree(stack)                        stackFreeH   (stack)
+    #define stackTop(stack, dst)                    stackTopH    (stack, dst)
+    #define stackPush(stack, src)                   stackPushH   (stack, src)
+    #define stackPop(stack, dst)                    stackPopH_   (stack, dst)
+    #define stackLen(stack)                         stackLenH    (stack)
+    #define stackDump(stack)                        stackDumpH   (stack)
+    #define stackVerify(stack)                      stackVerifyH (stack)
 #endif
 
 

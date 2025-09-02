@@ -5,56 +5,58 @@ static void normalWork ()
 {
     log_string ("<blu><b>Normal work test</b><dft>\n");
 
-    StackHandler stack = stackInitH (3, sizeof(int));
+    StackHandler stack = stackInit (3, sizeof(int));
 
-    stackDumpH (stack);
+    stackDump (stack);
 
     int a = 0X11111111;
-    stackPushH (stack, &a);
+    stackPush (stack, &a);
     a = 0X22222222;
-    stackPushH (stack, &a);
+    stackPush (stack, &a);
     a = 0X33333333;
-    stackPushH (stack, &a);
+    stackPush (stack, &a);
     a = 0X44444444;
-    stackPushH (stack, &a);
+    stackPush (stack, &a);
 
-    stackDumpH (stack);
+    stackDump (stack);
 
-    stackPopH (stack);
-    stackDumpH (stack);
+    stackPop (stack, NULL);
+    stackDump (stack);
 
-    stackFreeH (stack);
+    stackFree (stack);
     log_string ("<grn>TEST PASSED<dft>\n");
 }
 
+T3
+(
 static void randHandler ()
 {
     log_string ("<blu><b>Random handler fault test</b><dft>\n");
 
     log_string("<ylw>Verify testing<dft>\n");
-    stackVerifyH (rand());
+    stackVerify (rand());
 
     log_string("<ylw>Free testing<dft>\n");
-    stackFreeH (rand());
+    stackFree (rand());
 
     log_string("<ylw>Top testing<dft>\n");
-    stackTopH (rand(), NULL);
+    stackTop (rand(), NULL);
     
     log_string("<ylw>Push testing<dft>\n");
-    stackPushH (rand(), (int*)rand());
+    stackPush (rand(), (int*)rand());
 
     log_string("<ylw>Pop testing<dft>\n");
-    stackPopH (rand());
+    stackPop (rand(), NULL);
 
     log_string("<ylw>Len testing<dft>\n");
-    stackLenH (rand());
+    stackLen (rand());
 
     log_string("<ylw>Dump testing<dft>\n");
-    stackDumpH (rand());
+    stackDump (rand());
 
     log_string ("<grn>TEST PASSED<dft>\n");
 }
-
+)
 
 int main ()
 {
@@ -62,5 +64,5 @@ int main ()
 
     normalWork ();
 
-    randHandler ();
+T3( randHandler (); )
 }

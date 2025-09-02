@@ -35,8 +35,7 @@ static Stack* handlerFree (StackHandler handler)
 
 StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem)
 {
-    Stack* ptr = (Stack*)malloc(sizeof(Stack));
-    stackInitD (ptr, numOfElem, sizeOfElem);
+    Stack* ptr = stackInitD (NULL, numOfElem, sizeOfElem);
     return handlerAdd (ptr);
 }
 

@@ -21,12 +21,18 @@ static void updateT2Hashes (Stack* dst)
 )
 
 
-void stackInitD (Stack* dst, size_t numOfElem, size_t sizeOfElem)
+Stack* stackInitD (Stack* dst, size_t numOfElem, size_t sizeOfElem)
 {
-    assertStrict (dst, "NULL received");
+    if (dst == NULL)
+    {
+        dst = (Stack*)malloc(sizeof(Stack));
+        dst->autoCreated = true;
+    }
+    else dst->autoCreated = false;
+    assertStrict (dst, "malloc returned NULL");
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    size_t service_info = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) );
+    size_t service_info = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
     dst->data = (char*) calloc (numOfElem + service_info, sizeOfElem) T1 ( + sizeof (uintptr_t));
 
     if (dst->data)
@@ -40,11 +46,13 @@ T1      (
         dst->tailCanary  = TAILCANARY;
 
         *((uintptr_t*)dst->data - 1)                      = (uintptr_t) dst->data ^ HEXSPEAK;
-        *(uintptr_t*)(dst->data + numOfElem * sizeOfElem) = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
+        *(uintptr_t*)(dst->data + numOfElem * sizeOfElem + (numOfElem * sizeOfElem % sizeof (uintptr_t)) ) = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
         )
 T2(     updateT2Hashes (dst); )
 
         assertStrict (stackVerifyD(dst) == 0, "verification failed, cant continue");
+
+        return dst;
     }
 
     else
@@ -67,7 +75,9 @@ T1( stack->data -= sizeof (uintptr_t); )
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 
     free (stack->data);
-    memset (stack, 0xCC, sizeof (Stack));
+
+    if (stack->autoCreated) free (stack);
+    else memset (stack, 0xCC, sizeof (Stack));
 }
 
 
@@ -218,7 +228,9 @@ T2  (
     )
 
 T1  (
-    if ( *((uintptr_t*)stack->data - 1) != ((uintptr_t) stack->data ^ HEXSPEAK) || *(uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem) != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
+    uintptr_t frontCanary = *((uintptr_t*)stack->data - 1);
+    uintptr_t tailCanary = *(uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)));
+    if ( frontCanary != ((uintptr_t) stack->data ^ HEXSPEAK) || tailCanary != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
     {
         log_string
         (
