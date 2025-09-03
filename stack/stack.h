@@ -9,7 +9,7 @@
 
     typedef Stack* StackHandler;
 
-    #define stackInit(numOfElem, sizeOfElem)        stackInitD   (NULL, numOfElem, sizeOfElem)
+    #define stackInit(numOfElem, sizeOfElem)        stackInitD   (numOfElem, sizeOfElem)
     #define stackFree(stack)                        stackFreeD   (stack)
     #define stackTop(stack, dst)                    stackTopD    (stack, dst)
     #define stackPush(stack, src)                   stackPushD   (stack, src)
@@ -21,7 +21,7 @@
 #else
     #include "src/handlers.h"
 
-    #define stackInit(numOfElem, sizeOfElem)   stackInitH   (numOfElem, sizeOfElem)
+    #define stackInit(numOfElem, sizeOfElem)        stackInitH   (numOfElem, sizeOfElem)
     #define stackFree(stack)                        stackFreeH   (stack)
     #define stackTop(stack, dst)                    stackTopH    (stack, dst)
     #define stackPush(stack, src)                   stackPushH   (stack, src)

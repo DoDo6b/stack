@@ -23,17 +23,20 @@ const uintptr_t HEXSPEAK   = 0XBADA110CBADFEE11;
 typedef struct
 {
 T1( uint32_t frontCanary; )
-    bool autoCreated;
     char* top;
     char* data;
     size_t capacity;
     size_t sizeOfElem;
-T2( uint32_t crc32Data;)
-T2( uint32_t crc32;)
+T2( uint32_t crc32Data; )
+T2( uint32_t crc32; )
 T1( uint32_t tailCanary; )
 }Stack;
 
-Stack* stackInitD (Stack* dst, size_t numOfElem, size_t sizeOfElem);
+Stack* stackInitD (size_t numOfElem, size_t sizeOfElem);
+
+#define GROWTHRATE 2
+#define REDUCERATE 3 / 4
+#define REDUCETHRESHOLD 2 / 3
 
 void stackFreeD (Stack* stack);
 

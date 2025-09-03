@@ -11,10 +11,13 @@ static void normalWork ()
 
     int a = 0X11111111;
     stackPush (stack, &a);
+    stackDump (stack);
     a = 0X22222222;
     stackPush (stack, &a);
+    stackDump (stack);
     a = 0X33333333;
     stackPush (stack, &a);
+    stackDump (stack);
     a = 0X44444444;
     stackPush (stack, &a);
 

@@ -21,19 +21,17 @@ static void updateT2Hashes (Stack* dst)
 )
 
 
-Stack* stackInitD (Stack* dst, size_t numOfElem, size_t sizeOfElem)
+Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 {
-    if (dst == NULL)
-    {
-        dst = (Stack*)malloc(sizeof(Stack));
-        dst->autoCreated = true;
-    }
-    else dst->autoCreated = false;
-    assertStrict (dst, "malloc returned NULL");
+    Stack* dst = (Stack*)calloc(1, sizeof(Stack));
+
+    assertStrict (dst, "calloc returned NULL");
+    if (!dst) return NULL;
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    size_t service_info = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
-    dst->data = (char*) calloc (numOfElem + service_info, sizeOfElem) T1 ( + sizeof (uintptr_t));
+    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
+    dst->data = (char*) calloc (numOfElem + reservedMemory, sizeOfElem) T1 ( + sizeof (uintptr_t));
+    assertStrict (dst->data, "calloc returned NUL");
 
     if (dst->data)
     {
@@ -45,66 +43,96 @@ T1      (
         dst->frontCanary = FRONTCANARY;
         dst->tailCanary  = TAILCANARY;
 
-        *((uintptr_t*)dst->data - 1)                      = (uintptr_t) dst->data ^ HEXSPEAK;
-        *(uintptr_t*)(dst->data + numOfElem * sizeOfElem + (numOfElem * sizeOfElem % sizeof (uintptr_t)) ) = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
+        uintptr_t* frontOffset = (uintptr_t*)dst->data - 1;
+        *frontOffset = (uintptr_t) dst->data ^ HEXSPEAK;
+
+        uintptr_t* tailOffset = (uintptr_t*)(dst->data + numOfElem * sizeOfElem + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
+        *tailOffset = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
         )
 T2(     updateT2Hashes (dst); )
 
-        assertStrict (stackVerifyD(dst) == 0, "verification failed, cant continue");
+        assertStrict (stackVerifyD (dst) == 0, "verification failed, cant continue");
 
         return dst;
     }
 
     else
     {
-        IF_DBG
-        (
-            log_err ("internal error", "calloc returned NULL");
-            IF_SAFE (exit (EXIT_FAILURE);)
-        )
-
-        memset (dst, 0xCC, sizeof (Stack));
+        free (dst);
+        return NULL;
     }
+}
+
+static void stackReallocD (Stack* stack)
+{
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
+    
+    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), stack->sizeOfElem) + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+    size_t newSize = (stack->capacity * (GROWTHRATE) + reservedMemory) * stack->sizeOfElem;
+    size_t topOffset = stack->top - stack->data;
+
+    char* newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
+    assertStrict (newBlock, "realloc returned NULL");
+    if (!newBlock) return;
+
+    stack->data = newBlock T1 ( + sizeof (uintptr_t) );
+    memset (stack->data + stack->capacity * stack->sizeOfElem, 0, ((GROWTHRATE) - 1) * stack->capacity * stack->sizeOfElem);
+    stack->capacity *= (GROWTHRATE);
+    stack->top = stack->data + topOffset;
+
+T1  (
+    uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
+    *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
+
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+    *tailOffset = (uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
+    )
+T2( updateT2Hashes (stack); )
+
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
 }
 
 void stackFreeD (Stack* stack)
 {
-    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
 T1( stack->data -= sizeof (uintptr_t); )
 
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
 
     free (stack->data);
 
-    if (stack->autoCreated) free (stack);
-    else memset (stack, 0xCC, sizeof (Stack));
+    memset (stack, 0xCC, sizeof (Stack));
+    free (stack);
 }
 
 
 void stackTopD (const Stack* stack, void* dst)
 {
-    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     
     memcpy (dst, stack->top - stack->sizeOfElem, stack->sizeOfElem);
 }
 
 void stackPushD (Stack* stack, const void* src)
 {
-    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     assertStrict (src, "received a NULL");
 
-    if ((size_t)(stack->top - stack->data) < stack->capacity * stack->sizeOfElem)
+    if ((size_t)(stack->top - stack->data) >= stack->capacity * stack->sizeOfElem) stackReallocD (stack);
+    if ((size_t)(stack->top - stack->data) <  stack->capacity * stack->sizeOfElem)
     {
         memcpy (stack->top, src, stack->sizeOfElem);
         stack->top += stack->sizeOfElem;
 
 T2(     updateT2Hashes (stack); )
+
+        assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     }
 }
 
 void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 {
-    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
 
     if (stack->top - stack->sizeOfElem >= stack->data)
     {
@@ -114,12 +142,14 @@ void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 
 S1(     memset (stack->top, 0XCC, stack->sizeOfElem); )
 T2(     updateT2Hashes (stack); )
+
+        assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     }
 }
 
 size_t stackLenD (const Stack* stack)
 {
-    assertStrict (stackVerifyD(stack) == 0, "verification failed, cant continue");
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     return (stack->top - stack->data) / stack->sizeOfElem;
 }
 
@@ -228,9 +258,10 @@ T2  (
     )
 
 T1  (
-    uintptr_t frontCanary = *((uintptr_t*)stack->data - 1);
-    uintptr_t tailCanary = *(uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)));
-    if ( frontCanary != ((uintptr_t) stack->data ^ HEXSPEAK) || tailCanary != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
+    uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+
+    if ( *frontOffset != ((uintptr_t) stack->data ^ HEXSPEAK) || *tailOffset != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
     {
         log_string
         (
