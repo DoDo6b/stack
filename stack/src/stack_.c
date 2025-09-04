@@ -1,7 +1,7 @@
 #include "stack_.h"
 
 
-static size_t ceil (size_t a, size_t b)
+static inline size_t ceil (size_t a, size_t b)
 {
     assertStrict (b != 0, "IDIOT division by zero");
     
@@ -10,7 +10,7 @@ static size_t ceil (size_t a, size_t b)
 
 T2
 (
-static void updateT2Hashes (Stack* dst)
+static inline void updateT2Hashes (Stack* dst)
 {
     assertStrict (dst,       "recived a NULL");
     assertStrict (dst->data, "stack wasnt initialized");
@@ -19,6 +19,24 @@ static void updateT2Hashes (Stack* dst)
     dst->crc32      = crc32Calculate ((unsigned char*)dst, &dst->crc32 - &dst->frontCanary);
 }
 )
+
+static void updateMetaInfo (Stack* stack)
+{
+    assertStrict (stack, "recived a NULL");
+    assertStrict (stack->frontCanary == FRONTCANARY && stack->tailCanary == TAILCANARY, "stack signes corrupted");
+    assertStrict (stack->data && stack->sizeOfElem > 0 && stack->capacity > 0, "struct corrupted");
+    
+T1  (
+    uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
+              *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
+
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+              *tailOffset = (uintptr_t) (stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
+    )
+T2( updateT2Hashes (stack); )
+
+    assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
+}
 
 
 Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
@@ -43,13 +61,8 @@ T1      (
         dst->frontCanary = FRONTCANARY;
         dst->tailCanary  = TAILCANARY;
 
-        uintptr_t* frontOffset = (uintptr_t*)dst->data - 1;
-                  *frontOffset = (uintptr_t) dst->data ^ HEXSPEAK;
-
-        uintptr_t* tailOffset = (uintptr_t*)(dst->data + numOfElem * sizeOfElem  + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
-                  *tailOffset = (uintptr_t) (dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
+        updateMetaInfo (dst);
         )
-T2(     updateT2Hashes (dst); )
 
         assertStrict (stackVerifyD (dst) == 0, "verification failed, cant continue");
 
@@ -62,32 +75,38 @@ T2(     updateT2Hashes (dst); )
     }
 }
 
-static void stackReallocD (Stack* stack)
+void stackReallocD (Stack* stack, size_t newCapacity, bool ignoreDataLoss)
 {
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
-    
+
+    if (stack->capacity == newCapacity) return;
+
+    assertStrict (newCapacity > stack->capacity || ignoreDataLoss || (stack->top - stack->data) / stack->sizeOfElem < newCapacity, "data loss");
+    if (newCapacity < stack->capacity && !ignoreDataLoss && (stack->top - stack->data) / stack->sizeOfElem > newCapacity) return;
+
     size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), stack->sizeOfElem) + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
 
-    size_t newSize        = (stack->capacity * (GROWTHRATE) + reservedMemory) * stack->sizeOfElem;
+    size_t newSize        = (newCapacity + reservedMemory) * stack->sizeOfElem;
     size_t topOffset      = stack->top - stack->data;
 
     char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
     assertStrict (newBlock, "realloc returned NULL");
-    if (!newBlock) return;
+    if (         !newBlock) return;
 
-    stack->data     =  newBlock T1 ( + sizeof (uintptr_t) );
-    memset (stack->data + stack->capacity * stack->sizeOfElem, 0, ((GROWTHRATE) - 1) * stack->capacity * stack->sizeOfElem);
-    stack->capacity *= (GROWTHRATE);
-    stack->top      =  stack->data + topOffset;
-
-T1  (
+S1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
-              *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
+              *frontOffset = 0XCCCCCCCCCCCCCCCC;
 
     uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
-              *tailOffset = (uintptr_t) (stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
+              *tailOffset = 0XCCCCCCCCCCCCCCCC;
     )
-T2( updateT2Hashes (stack); )
+
+    stack->data     = newBlock T1 ( + sizeof (uintptr_t) );
+    if (newCapacity > stack->capacity) memset (stack->data + stack->capacity * stack->sizeOfElem, 0, (newCapacity - stack->capacity) * stack->sizeOfElem);
+    stack->capacity = newCapacity;
+    stack->top      = stack->data + topOffset;
+
+T1( updateMetaInfo (stack); )
 
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
 }
@@ -117,7 +136,7 @@ void stackPushD (Stack* stack, const void* src)
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     assertStrict (src, "received a NULL");
 
-    if ((size_t)(stack->top - stack->data) >= stack->capacity * stack->sizeOfElem) stackReallocD (stack);
+    if ((size_t)(stack->top - stack->data) >= stack->capacity * stack->sizeOfElem) stackReallocD (stack, stack->capacity * GrowthRate / 100, false);
     if ((size_t)(stack->top - stack->data) <  stack->capacity * stack->sizeOfElem)
     {
         memcpy (stack->top, src, stack->sizeOfElem);
@@ -141,6 +160,8 @@ void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 
 S1(     memset (stack->top, 0XCC, stack->sizeOfElem); )
 T2(     updateT2Hashes (stack); )
+
+        if ((stack->top - stack->data) / stack->sizeOfElem < stack->capacity * ReductionRate / 100) stackReallocD (stack, stack->capacity * ReductionRate / 100, false);
 
         assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     }
@@ -169,20 +190,20 @@ T1(     "frontCanary:     0X%0X\n" )
         "data block ptr:  %p\n"
         "capacity:        %zu elem(s)\n"
         "size of element: %zu byte(s)\n"
-        "crc of data:     %u\n"
-        "crc of struct:   %u\n"
+T2(     "crc of data:     %u\n" )
+T2(     "crc of struct:   %u\n" )
 T1(     "tailCanary:      0X%0X\n" )
         "real size        %zu byte(s)\n"
         "{\n",
         name,
-        stack->frontCanary,
+T1(     stack->frontCanary, )
         stack->top,
         stack->data,
         stack->capacity,
         stack->sizeOfElem,
-        stack->crc32Data,
-        stack->crc32,
-        stack->tailCanary,
+T2(     stack->crc32Data, )
+T2(     stack->crc32, )
+T1(     stack->tailCanary, )
         stack->top - stack->data
     );
 

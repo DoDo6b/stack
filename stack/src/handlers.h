@@ -16,6 +16,8 @@ typedef size_t StackHandler;
 
 StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem);
 
+void stackReallocH (StackHandler handle, size_t newCapacity, bool ignoreDataLoss);
+
 void stackFreeH (StackHandler handle);
 
 void stackTopH (StackHandler handle, void* dst);

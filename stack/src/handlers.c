@@ -39,6 +39,12 @@ StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem)
     return handlerAdd (ptr);
 }
 
+void stackReallocH (StackHandler handle, size_t newCapacity, bool ignoreDataLoss)
+{
+    assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");
+    stackReallocD (Pointers[handle], newCapacity, ignoreDataLoss);
+}
+
 void stackFreeH (StackHandler handle)
 {
     assertStrict (handle < HANDLERSCAP && Pointers[handle], "invalid handler");

@@ -34,9 +34,10 @@ T1( uint32_t tailCanary; )
 
 Stack* stackInitD (size_t numOfElem, size_t sizeOfElem);
 
-#define GROWTHRATE 2
-#define REDUCERATE 3 / 4
-#define REDUCETHRESHOLD 2 / 3
+const unsigned int GrowthRate = 200;
+const unsigned int ReductionRate = 66;
+
+void stackReallocD (Stack* stack, size_t newCapacity, bool ignoreDataLoss);
 
 void stackFreeD (Stack* stack);
 

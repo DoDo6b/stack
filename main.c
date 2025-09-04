@@ -50,6 +50,29 @@ static void reallocTest ()
     log_string ("<grn>TEST PASSED<dft>\n");
 }
 
+static void reduceTest ()
+{
+    log_string ("<blu><b>Reduce test</b><dft>\n");
+
+    StackHandler stack = stackInit (10, sizeof (int));
+
+    stackDump (stack);
+
+    int testval = 0X0DEC0DED;
+    stackPush (stack, &testval);
+    stackPush (stack, &testval);
+    stackPush (stack, &testval);
+
+    stackDump (stack);
+
+    stackPop (stack, NULL);
+
+    stackDump (stack);
+    stackFree (stack);
+
+    log_string ("<grn>TEST PASSED<dft>\n");
+}
+
 T3
 (
 static void randHandler ()
@@ -88,6 +111,8 @@ int main ()
     normalWork ();
 
     reallocTest ();
+
+    reduceTest ();
 
 T3( randHandler (); )
 }
