@@ -47,7 +47,7 @@ const char* get_log();
     )
 
 
-void memDump (const void* pointer, size_t words);
+void memDump (const void* pointer, size_t byteSize);
 
 
 #endif

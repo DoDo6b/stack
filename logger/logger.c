@@ -13,7 +13,7 @@ FILE* log_start (const char* fname)
     else if (!strncmp(fname, "stderr", NAME_MAX))   LogStream = stderr;
     else
     {
-        buffer = fopen (fname, "a");
+        buffer = fopen (fname, "a+");
         if (!buffer)
         {
             print_stderr("internal error", "fopen returned a NULL");

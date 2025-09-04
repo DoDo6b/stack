@@ -12,7 +12,7 @@ T2
 (
 static void updateT2Hashes (Stack* dst)
 {
-    assertStrict (dst, "recived a NULL");
+    assertStrict (dst,       "recived a NULL");
     assertStrict (dst->data, "stack wasnt initialized");
 
     dst->crc32Data  = crc32Calculate ((unsigned char*)dst->data, dst->capacity * dst->sizeOfElem);
@@ -24,9 +24,9 @@ static void updateT2Hashes (Stack* dst)
 Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 {
     Stack* dst = (Stack*)calloc(1, sizeof(Stack));
-
     assertStrict (dst, "calloc returned NULL");
     if (!dst) return NULL;
+
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
     size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
@@ -44,10 +44,10 @@ T1      (
         dst->tailCanary  = TAILCANARY;
 
         uintptr_t* frontOffset = (uintptr_t*)dst->data - 1;
-        *frontOffset = (uintptr_t) dst->data ^ HEXSPEAK;
+                  *frontOffset = (uintptr_t) dst->data ^ HEXSPEAK;
 
-        uintptr_t* tailOffset = (uintptr_t*)(dst->data + numOfElem * sizeOfElem + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
-        *tailOffset = (uintptr_t)(dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
+        uintptr_t* tailOffset = (uintptr_t*)(dst->data + numOfElem * sizeOfElem  + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
+                  *tailOffset = (uintptr_t) (dst->data + numOfElem * sizeOfElem) ^ HEXSPEAK;
         )
 T2(     updateT2Hashes (dst); )
 
@@ -55,7 +55,6 @@ T2(     updateT2Hashes (dst); )
 
         return dst;
     }
-
     else
     {
         free (dst);
@@ -67,25 +66,26 @@ static void stackReallocD (Stack* stack)
 {
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     
-    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), stack->sizeOfElem) + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
-    size_t newSize = (stack->capacity * (GROWTHRATE) + reservedMemory) * stack->sizeOfElem;
-    size_t topOffset = stack->top - stack->data;
+    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), stack->sizeOfElem) + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
 
-    char* newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
+    size_t newSize        = (stack->capacity * (GROWTHRATE) + reservedMemory) * stack->sizeOfElem;
+    size_t topOffset      = stack->top - stack->data;
+
+    char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
     assertStrict (newBlock, "realloc returned NULL");
     if (!newBlock) return;
 
-    stack->data = newBlock T1 ( + sizeof (uintptr_t) );
+    stack->data     =  newBlock T1 ( + sizeof (uintptr_t) );
     memset (stack->data + stack->capacity * stack->sizeOfElem, 0, ((GROWTHRATE) - 1) * stack->capacity * stack->sizeOfElem);
     stack->capacity *= (GROWTHRATE);
-    stack->top = stack->data + topOffset;
+    stack->top      =  stack->data + topOffset;
 
 T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
-    *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
+              *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
 
-    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
-    *tailOffset = (uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+              *tailOffset = (uintptr_t) (stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
     )
 T2( updateT2Hashes (stack); )
 
@@ -98,11 +98,10 @@ void stackFreeD (Stack* stack)
 T1( stack->data -= sizeof (uintptr_t); )
 
 S1( memset (stack->data, 0XCC, stack->capacity * stack->sizeOfElem); )
+    free   (stack->data);
 
-    free (stack->data);
-
-    memset (stack, 0xCC, sizeof (Stack));
-    free (stack);
+    memset (stack,       0xCC, sizeof (Stack));
+    free   (stack);
 }
 
 
@@ -122,7 +121,7 @@ void stackPushD (Stack* stack, const void* src)
     if ((size_t)(stack->top - stack->data) <  stack->capacity * stack->sizeOfElem)
     {
         memcpy (stack->top, src, stack->sizeOfElem);
-        stack->top += stack->sizeOfElem;
+                stack->top +=    stack->sizeOfElem;
 
 T2(     updateT2Hashes (stack); )
 
@@ -134,7 +133,7 @@ void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 {
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
 
-    if (stack->top - stack->sizeOfElem >= stack->data)
+    if (stack->top -  stack->sizeOfElem >= stack->data)
     {
         stack->top -= stack->sizeOfElem;
 
@@ -165,19 +164,45 @@ void stackDumpD_ (const char* name, const Stack* stack, void (*print)(const void
     log_string
     (
         "<blu>%s dump:<dft>\n"
-        "capacity: %zu elem(s),\n"
-        "real size %zu byte(s)\n"
+T1(     "frontCanary:     0X%0X\n" )
+        "top ptr:         %p\n"
+        "data block ptr:  %p\n"
+        "capacity:        %zu elem(s)\n"
+        "size of element: %zu byte(s)\n"
+        "crc of data:     %u\n"
+        "crc of struct:   %u\n"
+T1(     "tailCanary:      0X%0X\n" )
+        "real size        %zu byte(s)\n"
         "{\n",
         name,
+        stack->frontCanary,
+        stack->top,
+        stack->data,
         stack->capacity,
+        stack->sizeOfElem,
+        stack->crc32Data,
+        stack->crc32,
+        stack->tailCanary,
         stack->top - stack->data
     );
+
+T1  (
+    log_string ("  [frontCanary]: ");
+    memDump (stack->data - sizeof(uintptr_t), sizeof(uintptr_t));
+    )
+
     for (size_t i = 0; stack->data + i <= stack->top; i += stack->sizeOfElem)
     {
         log_string ("  [%zu]: ", i / stack->sizeOfElem);
+        
         if (print) print (stack->data + i);
-        else memDump (stack->data + i, stack->sizeOfElem);
+        else       memDump (stack->data + i, stack->sizeOfElem);
     }
+
+T1  (
+    log_string ("  [tailCanary]: ");
+    memDump (stack->data + stack->sizeOfElem * stack->capacity + (stack->sizeOfElem * stack->capacity) % sizeof (uintptr_t), sizeof (uintptr_t));
+    )
 
     log_string ("}\n");
 }
@@ -259,7 +284,7 @@ T2  (
 
 T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
-    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
 
     if ( *frontOffset != ((uintptr_t) stack->data ^ HEXSPEAK) || *tailOffset != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
     {
