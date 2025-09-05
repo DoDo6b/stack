@@ -89,10 +89,6 @@ void stackReallocD (Stack* stack, size_t newCapacity, bool ignoreDataLoss)
     size_t newSize        = (newCapacity + reservedMemory) * stack->sizeOfElem;
     size_t topOffset      = stack->top - stack->data;
 
-    char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
-    assertStrict (newBlock, "realloc returned NULL");
-    if (         !newBlock) return;
-
 S1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
               *frontOffset = 0XCCCCCCCCCCCCCCCC;
@@ -100,6 +96,10 @@ S1  (
     uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
               *tailOffset = 0XCCCCCCCCCCCCCCCC;
     )
+
+    char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
+    assertStrict (newBlock, "realloc returned NULL");
+    if (         !newBlock) return;
 
     stack->data     = newBlock T1 ( + sizeof (uintptr_t) );
     if (newCapacity > stack->capacity) memset (stack->data + stack->capacity * stack->sizeOfElem, 0, (newCapacity - stack->capacity) * stack->sizeOfElem);
