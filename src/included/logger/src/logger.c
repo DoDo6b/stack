@@ -1,9 +1,10 @@
-#include "logger.h"
+#include "../logger.h"
 
 
 static char LogFile[NAME_MAX] = "";
 static FILE* LogStream = NULL;
 
+Erracc_t ErrAcc = 0;
 
 FILE* log_start (const char* fname)
 {
@@ -32,7 +33,7 @@ FILE* log_start (const char* fname)
 }
 
 
-static unsigned long djb2Hash (const char* hashable, size_t size)
+unsigned long djb2Hash (const char* hashable, size_t size)
 {
     if (!hashable)
     {
@@ -43,7 +44,7 @@ static unsigned long djb2Hash (const char* hashable, size_t size)
     
     for (; *hashable && size > 0; hashable++, size--)
     {
-        hash = (hash << 5) + hash + *hashable;
+        hash = (hash << 5) + hash + (unsigned char)*hashable;
     }
 
     return hash;
@@ -123,7 +124,11 @@ int log_string (const char* format, ...)
     va_start (args, format);
 
     char Buffer[BUFSIZ] = "";
-    vsprintf (Buffer, format, args);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    vsnprintf (Buffer, sizeof (Buffer), format, args);
+#pragma GCC diagnostic pop
 
     va_end (args);
 
@@ -141,8 +146,11 @@ int log_string (const char* format, ...)
 
 void log_close()
 {
-    fprintf (LogStream, "\n</pre>\n");
-    if (LogStream && (LogStream != stdout || LogStream != stderr) ) fclose (LogStream);
+    if (LogStream && LogStream != stdout && LogStream != stderr) 
+    {
+        fprintf (LogStream, "\n</pre>\n");
+        fclose (LogStream);
+    }
 }
 
 const char* get_log()

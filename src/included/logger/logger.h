@@ -3,13 +3,14 @@
 
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 
-#include "EscSeq.h"
-#include "htmlTags.h"
+#include "src/EscSeq.h"
+#include "src/htmlTags.h"
 
 #define SPEC_OPEN       '<'
 #define SPEC_DIVIDER    ';'
@@ -17,6 +18,10 @@
 
 
 #define NAME_MAX 255
+
+typedef uint64_t Erracc_t;
+
+extern Erracc_t ErrAcc;
 
 FILE* log_start (const char* fname);
 
@@ -44,10 +49,30 @@ const char* get_log();
         __LINE__,\
         __func__,\
         ##__VA_ARGS__\
-    )
+    );\
+    log_string \
+    (\
+        "    | errAcc: %llu\n",\
+        ErrAcc\
+    )\
+
+#define log_srcerr(file, line, class, description, ...)  log_string \
+    (\
+        "%s:%d: %s: <b><red>" class ":<dft> " description "</b>\n",\
+        file,\
+        line,\
+        __func__,\
+        ##__VA_ARGS__\
+    );\
+    log_string \
+    (\
+        "    | errAcc: %llu\n",\
+        ErrAcc\
+    )\
 
 
 void memDump (const void* pointer, size_t byteSize);
 
+unsigned long djb2Hash (const char* hashable, size_t size);
 
 #endif

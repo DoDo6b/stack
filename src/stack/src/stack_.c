@@ -1,13 +1,6 @@
 #include "stack_.h"
 
 
-static inline size_t ceil (size_t a, size_t b)
-{
-    assertStrict (b != 0, "IDIOT division by zero");
-    
-    return (a + b - 1) / b;
-}
-
 T2
 (
 static inline void updateT2Hashes (Stack* dst)
@@ -23,9 +16,12 @@ static inline void updateT2Hashes (Stack* dst)
 static void updateMetaInfo (Stack* stack)
 {
     assertStrict (stack, "recived a NULL");
-    assertStrict (stack->frontCanary == FRONTCANARY && stack->tailCanary == TAILCANARY, "stack signes corrupted");
+T1( assertStrict (stack->frontCanary == FRONTCANARY && stack->tailCanary == TAILCANARY, "stack signes corrupted"); )
     assertStrict (stack->data && stack->sizeOfElem > 0 && stack->capacity > 0, "struct corrupted");
     
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
               *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
@@ -33,6 +29,9 @@ T1  (
     uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
               *tailOffset = (uintptr_t) (stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
     )
+
+#pragma GCC diagnostic pop
+
 T2( updateT2Hashes (stack); )
 
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
@@ -47,8 +46,8 @@ Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), sizeOfElem) + (numOfElem * sizeOfElem % sizeof (uintptr_t)) );
-    dst->data = (char*) calloc (numOfElem + reservedMemory, sizeOfElem) T1 ( + sizeof (uintptr_t));
+    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * sizeOfElem % sizeof (uintptr_t) );
+    dst->data = (char*) calloc (1, numOfElem * sizeOfElem + reservedMemory) T1 ( + sizeof (uintptr_t));
     assertStrict (dst->data, "calloc returned NUL");
 
     if (dst->data)
@@ -81,14 +80,18 @@ void stackReallocD (Stack* stack, size_t newCapacity, bool ignoreDataLoss)
 
     if (stack->capacity == newCapacity) return;
 
-    assertStrict (newCapacity > stack->capacity || ignoreDataLoss || (stack->top - stack->data) / stack->sizeOfElem < newCapacity, "data loss");
-    if (newCapacity < stack->capacity && !ignoreDataLoss && (stack->top - stack->data) / stack->sizeOfElem > newCapacity) return;
+    assertStrict (newCapacity > stack->capacity ||  ignoreDataLoss || (stack->top - stack->data) / stack->sizeOfElem < newCapacity, "data loss");
+    if (          newCapacity < stack->capacity && !ignoreDataLoss && (stack->top - stack->data) / stack->sizeOfElem > newCapacity) return;
 
-    size_t reservedMemory = 0 T1 ( + ceil (2 * sizeof (uintptr_t), stack->sizeOfElem) + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
+    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + newCapacity * stack->sizeOfElem % sizeof (uintptr_t) );
 
-    size_t newSize        = (newCapacity + reservedMemory) * stack->sizeOfElem;
+    size_t newSize        = newCapacity * stack->sizeOfElem + reservedMemory;
     size_t topOffset      = stack->top - stack->data;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
+T1  (
 S1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
               *frontOffset = 0XCCCCCCCCCCCCCCCC;
@@ -96,6 +99,9 @@ S1  (
     uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
               *tailOffset = 0XCCCCCCCCCCCCCCCC;
     )
+    )
+
+#pragma GCC diagnostic pop
 
     char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
     assertStrict (newBlock, "realloc returned NULL");
@@ -136,7 +142,9 @@ void stackPushD (Stack* stack, const void* src)
     assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     assertStrict (src, "received a NULL");
 
+#ifdef AREALLOC
     if ((size_t)(stack->top - stack->data) >= stack->capacity * stack->sizeOfElem) stackReallocD (stack, stack->capacity * GrowthRate / 100, false);
+#endif
     if ((size_t)(stack->top - stack->data) <  stack->capacity * stack->sizeOfElem)
     {
         memcpy (stack->top, src, stack->sizeOfElem);
@@ -161,7 +169,9 @@ void stackPopD_ (Stack* stack, void* dst /* = NULL */)
 S1(     memset (stack->top, 0XCC, stack->sizeOfElem); )
 T2(     updateT2Hashes (stack); )
 
+#ifdef AREALLOC
         if ((stack->top - stack->data) / stack->sizeOfElem < stack->capacity * ReductionRate / 100) stackReallocD (stack, stack->capacity * ReductionRate / 100, false);
+#endif
 
         assertStrict (stackVerifyD (stack) == 0, "verification failed, cant continue");
     }
@@ -229,10 +239,8 @@ T1  (
 }
 
 
-uint64_t stackVerifyD_ (const char* callerFile, unsigned int callerLine, const Stack* stack)
+Erracc_t stackVerifyD_ (const char* callerFile, unsigned int callerLine, const Stack* stack)
 {
-    uint64_t selfTestingCode = 0;
-
     if (stack == NULL)
     {
         log_string
@@ -242,9 +250,9 @@ uint64_t stackVerifyD_ (const char* callerFile, unsigned int callerLine, const S
             callerLine,
             __func__
         );
-        selfTestingCode |= RECIVED_NULL;
-        log_err ("verification error", "failed with code: %llu", selfTestingCode);
-        return selfTestingCode;
+        ErrAcc |= STCK_ERRCODE (RECIVED_NULL);
+        log_err ("verification error", "failed");
+        return ErrAcc;
     }
 
 T1  (
@@ -257,9 +265,9 @@ T1  (
             callerLine,
             __func__
         );
-        selfTestingCode |= MAIN_SIGNES_CORRUPTED;
-        log_err ("verification error", "failed with code: %llu", selfTestingCode);
-        return selfTestingCode;
+        ErrAcc |= STCK_ERRCODE (MAIN_SIGNES_CORRUPTED);
+        log_err ("verification error", "failed");
+        return ErrAcc;
     }
     )
 
@@ -272,9 +280,9 @@ T1  (
             callerLine,
             __func__
         );
-        selfTestingCode |= NOT_INITILIZED;
-        log_err ("verification error", "failed with code: %llu", selfTestingCode);
-        return selfTestingCode;
+        ErrAcc |= STCK_ERRCODE (NOT_INITILIZED);
+        log_err ("verification error", "failed");
+        return ErrAcc;
     }
 
     if (stack->top < stack->data || stack->top > stack->data + stack->capacity * stack->sizeOfElem || (stack->top - stack->data) % stack->sizeOfElem != 0)
@@ -286,7 +294,7 @@ T1  (
             callerLine,
             __func__
         );
-        selfTestingCode |= TOPPTR_OUTOFBOUNDS;
+        ErrAcc |= STCK_ERRCODE (TOPPTR_OUTOFBOUNDS);
     }
 
 T2  ( 
@@ -299,9 +307,12 @@ T2  (
             callerLine,
             __func__
         );
-        selfTestingCode |= CRCMAIN_HASCHANGED;
+        ErrAcc |= STCK_ERRCODE (CRCMAIN_HASCHANGED);
     }
     )
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
@@ -316,9 +327,11 @@ T1  (
             callerLine,
             __func__
         );
-        selfTestingCode |= DATABLOCK_SIGNES_CORRUPTED;
+        ErrAcc |= STCK_ERRCODE (DATABLOCK_SIGNES_CORRUPTED);
     }
     )
+
+#pragma GCC diagnostic pop
 
 T2  (
     if (stack->crc32Data != crc32Calculate ((const unsigned char*)stack->data, stack->capacity * stack->sizeOfElem))
@@ -330,14 +343,14 @@ T2  (
             callerLine,
             __func__
         );
-        selfTestingCode |= CRCDATA_HASHCHANGED;
+        ErrAcc |= STCK_ERRCODE (CRCDATA_HASHCHANGED);
     }
     )
 
 
-    if (selfTestingCode != 0)
+    if (ErrAcc != 0)
     {
-        log_err ("verification error", "failed with code: %llu", selfTestingCode);
+        log_err ("verification error", "failed");
     }
-    return selfTestingCode;
+    return ErrAcc;
 }

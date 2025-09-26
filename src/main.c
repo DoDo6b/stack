@@ -1,4 +1,4 @@
-#include "logger/logger.h"
+#include "included/logger/logger.h"
 #include "stack/stack.h"
 
 static void normalWork ()
@@ -73,6 +73,8 @@ static void reduceTest ()
     log_string ("<grn>TEST PASSED<dft>\n");
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 T3
 (
 static void randHandler ()
@@ -103,6 +105,7 @@ static void randHandler ()
     log_string ("<grn>TEST PASSED<dft>\n");
 }
 )
+#pragma GCC diagnostic pop
 
 int main ()
 {
