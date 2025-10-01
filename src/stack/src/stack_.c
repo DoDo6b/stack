@@ -26,7 +26,7 @@ T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
               *frontOffset = (uintptr_t) stack->data ^ HEXSPEAK;
 
-    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + 1 + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
               *tailOffset = (uintptr_t) (stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK;
     )
 
@@ -46,7 +46,7 @@ Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * sizeOfElem % sizeof (uintptr_t) );
+    size_t reservedMemory = 1 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * sizeOfElem % sizeof (uintptr_t) );
     dst->data = (char*) calloc (1, numOfElem * sizeOfElem + reservedMemory) T1 ( + sizeof (uintptr_t));
     assertStrict (dst->data, "calloc returned NUL");
 
@@ -83,7 +83,7 @@ void stackReallocD (Stack* stack, size_t newCapacity, bool ignoreDataLoss)
     assertStrict (newCapacity > stack->capacity ||  ignoreDataLoss || (stack->top - stack->data) / stack->sizeOfElem < newCapacity, "data loss");
     if (          newCapacity < stack->capacity && !ignoreDataLoss && (stack->top - stack->data) / stack->sizeOfElem > newCapacity) return;
 
-    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + newCapacity * stack->sizeOfElem % sizeof (uintptr_t) );
+    size_t reservedMemory = 1 T1 ( + 2 * sizeof (uintptr_t) + newCapacity * stack->sizeOfElem % sizeof (uintptr_t) );
 
     size_t newSize        = newCapacity * stack->sizeOfElem + reservedMemory;
     size_t topOffset      = stack->top - stack->data;
@@ -96,14 +96,14 @@ S1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
               *frontOffset = 0XCCCCCCCCCCCCCCCC;
 
-    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem  + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + 1 + (stack->capacity * stack->sizeOfElem % sizeof (uintptr_t)) );
               *tailOffset = 0XCCCCCCCCCCCCCCCC;
     )
     )
 
 #pragma GCC diagnostic pop
 
-    char*         newBlock = (char*)realloc (stack->data T1 ( - sizeof (uintptr_t) ), newSize);
+    char*         newBlock = (char*)realloc (stack->data, newSize);
     assertStrict (newBlock, "realloc returned NULL");
     if (         !newBlock) return;
 
@@ -285,7 +285,7 @@ T1  (
         return ErrAcc;
     }
 
-    if (stack->top < stack->data || stack->top > stack->data + stack->capacity * stack->sizeOfElem || (stack->top - stack->data) % stack->sizeOfElem != 0)
+    if (stack->top < stack->data || stack->top > stack->data + stack->capacity * stack->sizeOfElem)
     {
         log_string
         (
@@ -316,7 +316,7 @@ T2  (
 
 T1  (
     uintptr_t* frontOffset = (uintptr_t*)stack->data - 1;
-    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
+    uintptr_t* tailOffset = (uintptr_t*)(stack->data + stack->capacity * stack->sizeOfElem + 1 + ((stack->capacity * stack->sizeOfElem) % sizeof (uintptr_t)) );
 
     if ( *frontOffset != ((uintptr_t) stack->data ^ HEXSPEAK) || *tailOffset != ((uintptr_t)(stack->data + stack->capacity * stack->sizeOfElem) ^ HEXSPEAK) )
     {
