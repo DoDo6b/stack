@@ -48,7 +48,7 @@ Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 
     size_t reservedMemory = 1 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * sizeOfElem % sizeof (uintptr_t) );
     dst->data = (char*) calloc (1, numOfElem * sizeOfElem + reservedMemory) T1 ( + sizeof (uintptr_t));
-    assertStrict (dst->data, "calloc returned NUL");
+    assertStrict (dst->data != (void*)(0 T1 ( + sizeof (uintptr_t))), "calloc returned NUL");
 
     if (dst->data)
     {
