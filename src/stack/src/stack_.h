@@ -32,7 +32,7 @@ T2( uint32_t crc32; )
 T1( uint32_t tailCanary; )
 }Stack;
 
-Stack* stackInitD (size_t numOfElem, size_t sizeOfElem);
+Stack* stackInitD (size_t numOfElem, ssize_t sizeOfElem);
 
 const unsigned int GrowthRate = 200;
 const unsigned int ReductionRate = 66;

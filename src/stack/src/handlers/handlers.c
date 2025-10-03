@@ -33,7 +33,7 @@ static Stack* handlerFree (StackHandler handler)
     else return NULL;
 }
 
-StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem)
+StackHandler stackInitH (size_t numOfElem, ssize_t sizeOfElem)
 {
     Stack* ptr = stackInitD (numOfElem, sizeOfElem);
     return handlerAdd (ptr);

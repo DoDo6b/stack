@@ -38,7 +38,7 @@ T2( updateT2Hashes (stack); )
 }
 
 
-Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
+Stack* stackInitD (size_t numOfElem, ssize_t sizeOfElem)
 {
     Stack* dst = (Stack*)calloc(1, sizeof(Stack));
     assertStrict (dst, "calloc returned NULL");
@@ -46,14 +46,14 @@ Stack* stackInitD (size_t numOfElem, size_t sizeOfElem)
 
     assertStrict (numOfElem > 0 && sizeOfElem > 0, "cant allocate stack with capacity 0 or element size equal 0");
 
-    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * sizeOfElem % sizeof (uintptr_t) );
-    dst->data = (char*) calloc (1, numOfElem * sizeOfElem + reservedMemory) T1 ( + sizeof (uintptr_t));
+    size_t reservedMemory = 0 T1 ( + 2 * sizeof (uintptr_t) + numOfElem * (size_t)sizeOfElem % sizeof (uintptr_t) );
+    dst->data = (char*) calloc (1, numOfElem * (size_t)sizeOfElem + reservedMemory) T1 ( + sizeof (uintptr_t));
     assertStrict (dst->data != (void*)(0 T1 ( + sizeof (uintptr_t))), "calloc returned NUL");
 
     if (dst->data)
     {
         dst->top        = dst->data;
-        dst->sizeOfElem = sizeOfElem;
+        dst->sizeOfElem = (size_t)sizeOfElem;
         dst->capacity   = numOfElem;
 
 T1      (

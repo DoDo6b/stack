@@ -14,7 +14,7 @@ typedef size_t StackHandler;
 #define HANDLERSCAP 1024
 
 
-StackHandler stackInitH (size_t numOfElem, size_t sizeOfElem);
+StackHandler stackInitH (size_t numOfElem, ssize_t sizeOfElem);
 
 void stackReallocH (StackHandler handle, size_t newCapacity, bool ignoreDataLoss);
 
